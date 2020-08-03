@@ -1,0 +1,50 @@
+# Time: 2020-08-03T11:59:13.713909Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   171
+# Query_time: 0.251483  Lock_time: 0.000037 Rows_sent: 49  Rows_examined: 50058
+SET timestamp=1596455953;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:13.832130Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   172
+# Query_time: 0.262170  Lock_time: 0.000033 Rows_sent: 49  Rows_examined: 50063
+SET timestamp=1596455953;
+SELECT * FROM `items` WHERE `status` IN ('on_sale','sold_out') AND category_id IN ('21','22','23','24') ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:14.881262Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   172
+# Query_time: 0.264886  Lock_time: 0.000039 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455954;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND (`created_at` < '2019-08-12 15:50:22'  OR (`created_at` <= '2019-08-12 15:50:22' AND `id` < '49821')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:15.238497Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   173
+# Query_time: 0.290911  Lock_time: 0.000048 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455955;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND category_id IN ('21','22','23','24') AND (`created_at` < '2019-08-12 15:27:54'  OR (`created_at` <= '2019-08-12 15:27:54' AND `id` < '48466')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:15.299661Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   151
+# Query_time: 0.332613  Lock_time: 0.000138 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455955;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND (`created_at` < '2019-08-12 15:50:28'  OR (`created_at` <= '2019-08-12 15:50:28' AND `id` < '49826')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:15.574554Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   171
+# Query_time: 0.247275  Lock_time: 0.000047 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455955;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND category_id IN ('21','22','23','24') AND (`created_at` < '2019-08-12 15:23:32'  OR (`created_at` <= '2019-08-12 15:23:32' AND `id` < '48211')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:15.866977Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   171
+# Query_time: 0.212293  Lock_time: 0.000039 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455955;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND category_id IN ('21','22','23','24') AND (`created_at` < '2019-08-12 15:17:53'  OR (`created_at` <= '2019-08-12 15:17:53' AND `id` < '47865')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:16.015376Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   175
+# Query_time: 0.283174  Lock_time: 0.000047 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455956;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND (`created_at` < '2019-08-12 15:48:00'  OR (`created_at` <= '2019-08-12 15:48:00' AND `id` < '49677')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:16.147004Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   173
+# Query_time: 0.209805  Lock_time: 0.000037 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455956;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND category_id IN ('61','62','63','64','65','66') AND (`created_at` < '2019-08-12 15:23:27'  OR (`created_at` <= '2019-08-12 15:23:27' AND `id` < '48198')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
+# Time: 2020-08-03T11:59:16.446891Z
+# User@Host: isucari[isucari] @ localhost [127.0.0.1]  Id:   171
+# Query_time: 0.203368  Lock_time: 0.000038 Rows_sent: 49  Rows_examined: 50065
+SET timestamp=1596455956;
+SELECT * FROM `items` WHERE `status` IN ('on_sale', 'sold_out') AND category_id IN ('61','62','63','64','65','66') AND (`created_at` < '2019-08-12 15:19:23'  OR (`created_at` <= '2019-08-12 15:19:23' AND `id` < '47958')) ORDER BY `created_at` DESC, `id` DESC LIMIT 49;
