@@ -281,7 +281,15 @@ module Isucari
       items = if item_id > 0 && created_at > 0
         # paging
         begin
-          db.xquery("SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
+          #db.xquery("SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
+          db.xquery("SELECT i.*,  
+                             s.id sid,s.account_name san,s.num_sell_items ssi,
+                             b.id bid,b.account_name ban,b.num_sell_items bsi,
+                             t.id tid,t.status ts
+                    FROM `items` i LEFT JOIN `users` s ON i.seller_id = s.id 
+                                   LEFT JOIN `users` b ON i.buyer_id = b.id
+                                   LEFT JOIN `transaction_evidences` t ON i.id = t.item_id
+                    WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) AND (i.`created_at` < ?  OR (i.`created_at` <= ? AND i.`id` < ?)) ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
         rescue
           db.query('ROLLBACK')
           halt_with_error 500, 'db error'
@@ -289,7 +297,16 @@ module Isucari
       else
         # 1st page
         begin
-          db.xquery("SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
+          #db.xquery("SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
+          db.xquery("SELECT i.*,  
+                             s.id sid,s.account_name san,s.num_sell_items ssi,
+                             b.id bid,b.account_name ban,b.num_sell_items bsi,
+                             t.id tid,t.status ts
+                    FROM `items` i LEFT JOIN `users` s ON i.seller_id = s.id 
+                                   LEFT JOIN `users` b ON i.buyer_id = b.id
+                                   LEFT JOIN `transaction_evidences` t ON i.id = t.item_id
+                    WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) ORDER BY i.`created_at` DESC, i`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
+        
         rescue
           db.query('ROLLBACK')
           halt_with_error 500, 'db error'
@@ -297,8 +314,14 @@ module Isucari
       end
 
       item_details = items.map do |item|
-        seller = get_user_simple_by_id(item['seller_id'])
-        if seller.nil?
+        #seller = get_user_simple_by_id(item['seller_id'])
+        seller = {
+          'id' => items['sid'],
+          'account_name' => user['san'],
+          'num_sell_items' => user['ssi']
+        }
+        #if seller.nil?
+        if items['sid'].nil?
           db.query('ROLLBACK')
           halt_with_error 404, 'seller not found'
         end
@@ -329,8 +352,14 @@ module Isucari
         }
 
         if item['buyer_id'] != 0
-          buyer = get_user_simple_by_id(item['buyer_id'])
-          if buyer.nil?
+          #buyer = get_user_simple_by_id(item['buyer_id'])
+          buyer = {
+            'id' => items['bid'],
+            'account_name' => user['ban'],
+            'num_sell_items' => user['bsi']
+          }
+ 
+          if items['bid'].nil?
             db.query('ROLLBACK')
             halt_with_error 404, 'buyer not found'
           end
@@ -339,8 +368,9 @@ module Isucari
           item_detail['buyer'] = buyer
         end
 
-        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first
-        unless transaction_evidence.nil?
+        #transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first
+        #unless transaction_evidence.nil?
+        unless items['tid'].nil?
           shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
           if shipping.nil?
             db.query('ROLLBACK')
@@ -354,8 +384,10 @@ module Isucari
             halt_with_error 500, 'failed to request to shipment service'
           end
 
-          item_detail['transaction_evidence_id'] = transaction_evidence['id']
-          item_detail['transaction_evidence_status'] = transaction_evidence['status']
+          # item_detail['transaction_evidence_id'] = transaction_evidence['id']
+          item_detail['transaction_evidence_id'] = items['tid']
+          #item_detail['transaction_evidence_status'] = transaction_evidence['status']
+          item_detail['transaction_evidence_status'] = items['ts']
           item_detail['shipping_status'] = ssr['status']
         end
 
