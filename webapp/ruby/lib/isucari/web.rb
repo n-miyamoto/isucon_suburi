@@ -90,32 +90,6 @@ module Isucari
         }
       end
 
-      def cat_id_to_idx(category_id)
-        if category_id < 1
-          return -1
-        end
-        if category_id < 7
-          return category_id - 1
-        end
-        if category_id < 10
-          return - 1
-        end
-        if category_id < 16
-          return category_id - 4
-        end
-        if category_id < 20
-          return -1
-        end
-        if category_id < 25
-          return category_id - 12
-        end
-        if category_id < 16
-          return category_id - 1
-        end
- 
-        
-      end
-
       def get_category_by_id(category_id)
         categories_hash = {
             1 => { 'id' => 1,  'parent_id' =>  0, 'category_name' => "ソファー" , 'parent_category_name' => nil },
