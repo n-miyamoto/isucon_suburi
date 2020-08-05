@@ -91,24 +91,75 @@ module Isucari
       end
 
       def get_category_by_id(category_id)
-        category = db.xquery('SELECT * FROM `categories` WHERE `id` = ?', category_id).first
 
-        return if category.nil?
-
-        parent_category_name = if category['parent_id'] != 0
-          parent_category = get_category_by_id(category['parent_id'])
-
-          return if parent_category.nil?
-
-          parent_category['category_name']
+        categories_array = [
+          { 'id' => 1,  'parent_id' =>  0, 'category_name' => "ソファー" , 'parent_category_name' => nil },
+          { 'id' => 2,  'parent_id' =>  1, 'category_name' => "一人掛けソファー" , 'parent_category_name' => "ソファー" },
+          { 'id' => 3,  'parent_id' =>  1, 'category_name' => "二人掛けソファー" , 'parent_category_name' => "ソファー" },
+          { 'id' => 4,  'parent_id' =>  1, 'category_name' => "コーナーソファー" , 'parent_category_name' => "ソファー" },
+          { 'id' => 5,  'parent_id' =>  1, 'category_name' => "二段ソファー" , 'parent_category_name' => "ソファー" },
+          { 'id' => 6,  'parent_id' =>  1, 'category_name' => "ソファーベッド" , 'parent_category_name' => "ソファー" },
+          { 'id' => 10, 'parent_id' =>  0, 'category_name' => "家庭用チェア" , 'parent_category_name' => nil },
+          { 'id' => 11, 'parent_id' => 10, 'category_name' => "スツール" , 'parent_category_name' => "家庭用チェア" },
+          { 'id' => 12, 'parent_id' => 10, 'category_name' => "クッションスツール" , 'parent_category_name' => "家庭用チェア" },
+          { 'id' => 13, 'parent_id' => 10, 'category_name' => "ダイニングチェア" , 'parent_category_name' => "家庭用チェア" },
+          { 'id' => 14, 'parent_id' => 10, 'category_name' => "リビングチェア" , 'parent_category_name' => "家庭用チェア" },
+          { 'id' => 15, 'parent_id' => 10, 'category_name' => "カウンターチェア" , 'parent_category_name' => "家庭用チェア" },
+          { 'id' => 20, 'parent_id' =>  0, 'category_name' => "キッズチェア" , 'parent_category_name' => nil },
+          { 'id' => 21, 'parent_id' => 20, 'category_name' => "学習チェア" , 'parent_category_name' => "キッズチェア" },
+          { 'id' => 22, 'parent_id' => 20, 'category_name' => "ベビーソファ" , 'parent_category_name' => "キッズチェア" },
+          { 'id' => 23, 'parent_id' => 20, 'category_name' => "キッズハイチェア" , 'parent_category_name' => "キッズチェア" },
+          { 'id' => 24, 'parent_id' => 20, 'category_name' => "テーブルチェア" , 'parent_category_name' => "キッズチェア" },
+          { 'id' => 30, 'parent_id' =>  0, 'category_name' => "オフィスチェア" , 'parent_category_name' => nil },
+          { 'id' => 31, 'parent_id' => 30, 'category_name' => "デスクチェア" , 'parent_category_name' => "オフィスチェア" },
+          { 'id' => 32, 'parent_id' => 30, 'category_name' => "ビジネスチェア" , 'parent_category_name' => "オフィスチェア" },
+          { 'id' => 33, 'parent_id' => 30, 'category_name' => "回転チェア" , 'parent_category_name' => "オフィスチェア" },
+          { 'id' => 34, 'parent_id' => 30, 'category_name' => "リクライニングチェア" , 'parent_category_name' => "オフィスチェア" },
+          { 'id' => 35, 'parent_id' => 30, 'category_name' => "投擲用椅子" , 'parent_category_name' => "オフィスチェア" },
+          { 'id' => 40, 'parent_id' => 0," 'category_name' => "折りたたみ椅子" , 'parent_category_name' => nil },
+          { 'id' => 41, 'parent_id' => 40, 'category_name' => "パイプ椅子" , 'parent_category_name' => "折りたたみ椅子" },
+          { 'id' => 42, 'parent_id' => 40, 'category_name' => "木製折りたたみ椅子" , 'parent_category_name' => "折りたたみ椅子" },
+          { 'id' => 43, 'parent_id' => 40, 'category_name' => "キッチンチェア" , 'parent_category_name' => "折りたたみ椅子" },
+          { 'id' => 44, 'parent_id' => 40, 'category_name' => "アウトドアチェア" , 'parent_category_name' => "折りたたみ椅子" },
+          { 'id' => 45, 'parent_id' => 40, 'category_name' => "作業椅子" , 'parent_category_name' => "折りたたみ椅子" },
+          { 'id' => 50, 'parent_id' =>  0, 'category_name' => "ベンチ" , 'parent_category_name' => nil },
+          { 'id' => 51, 'parent_id' => 50, 'category_name' => "一人掛けベンチ" , 'parent_category_name' => "ベンチ" },
+          { 'id' => 52, 'parent_id' => 50, 'category_name' => "二人掛けベンチ" , 'parent_category_name' => "ベンチ" },
+          { 'id' => 53, 'parent_id' => 50, 'category_name' => "アウトドア用ベンチ" , 'parent_category_name' => "ベンチ" },
+          { 'id' => 54, 'parent_id' => 50, 'category_name' => "収納付きベンチ" , 'parent_category_name' => "ベンチ" },
+          { 'id' => 55, 'parent_id' => 50, 'category_name' => "背もたれ付きベンチ" , 'parent_category_name' => "ベンチ" },
+          { 'id' => 56, 'parent_id' => 50, 'category_name' => "ベンチマーク" , 'parent_category_name' => "ベンチ" },
+          { 'id' => 60, 'parent_id' =>  0, 'category_name' => "座椅子" , 'parent_category_name' => nil },
+          { 'id' => 61, 'parent_id' => 60, 'category_name' => "和風座椅子" , 'parent_category_name' => "座椅子" },
+          { 'id' => 62, 'parent_id' => 60, 'category_name' => "高座椅子" , 'parent_category_name' => "座椅子" },
+          { 'id' => 63, 'parent_id' => 60, 'category_name' => "ゲーミング座椅子" , 'parent_category_name' => "座椅子" },
+          { 'id' => 64, 'parent_id' => 60, 'category_name' => "ロッキングチェア" , 'parent_category_name' => "座椅子" },
+          { 'id' => 65, 'parent_id' => 60, 'category_name' => "座布団" , 'parent_category_name' => "座椅子" },
+          { 'id' => 66, 'parent_id' => 60, 'category_name' => "空気椅子 , 'parent_category_name' => "座椅子" }
+        ]
+        if category_id < 1 or category_id > 66
+          return
         end
+        categories_array[category_id-1]
 
-        {
-          'id' => category['id'],
-          'parent_id' => category['parent_id'],
-          'category_name' => category['category_name'],
-          'parent_category_name' => parent_category_name
-        }
+        #category = db.xquery('SELECT * FROM `categories` WHERE `id` = ?', category_id).first
+
+        #return if category.nil?
+
+        #parent_category_name = if category['parent_id'] != 0
+        #  parent_category = get_category_by_id(category['parent_id'])
+
+        #  return if parent_category.nil?
+
+        #  parent_category['category_name']
+        #end
+
+        #{
+        #  'id' => category['id'],
+        #  'parent_id' => category['parent_id'],
+        #  'category_name' => category['category_name'],
+        #  'parent_category_name' => parent_category_name
+        #}
       end
 
       def get_config_by_name(name)
