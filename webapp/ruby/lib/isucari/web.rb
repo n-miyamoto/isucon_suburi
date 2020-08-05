@@ -297,9 +297,7 @@ module Isucari
       else
         # 1st page
         begin
-          db.xquery("SELECT * FROM `items` 
-                    WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}"
-                    , user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
+          #db.xquery("SELECT * FROM `items` WHERE (`seller_id` = ? OR `buyer_id` = ?) AND `status` IN (?, ?, ?, ?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
           db.xquery("SELECT i.*,  
                              s.id sid,s.account_name san,s.num_sell_items ssi,
                              b.id bid,b.account_name ban,b.num_sell_items bsi,
@@ -362,7 +360,7 @@ module Isucari
             'num_sell_items' => user['bsi']
           }
  
-          if items['bid'].nil?
+          if items['ban'].nil?
             db.query('ROLLBACK')
             halt_with_error 404, 'buyer not found'
           end
