@@ -166,27 +166,6 @@ module Isucari
         categories_hash[category_id]
       end
 
-      #def get_category_by_id(category_id)
-      #  category = db.xquery('SELECT * FROM `categories` WHERE `id` = ?', category_id).first
-
-      #  return if category.nil?
-
-      #  parent_category_name = if category['parent_id'] != 0
-      #    parent_category = get_category_by_id(category['parent_id'])
-
-      #    return if parent_category.nil?
-
-      #    parent_category['category_name']
-      #  end
-
-      #  {
-      #    'id' => category['id'],
-      #    'parent_id' => category['parent_id'],
-      #    'category_name' => category['category_name'],
-      #    'parent_category_name' => parent_category_name
-      #  }
-      #end
-
       def get_config_by_name(name)
         config = db.xquery('SELECT * FROM `configs` WHERE `name` = ?', name).first
 
