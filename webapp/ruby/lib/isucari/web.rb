@@ -348,10 +348,10 @@ module Isucari
       item_details = items.map do |item|
         # seller = get_user_simple_by_id(item['seller_id'])
         # if seller.nil?
-        if item['san'].nil?
-          db.query('ROLLBACK')
-          halt_with_error 404, 'seller not found'
-        end
+        #if item['san'].nil?
+        #  db.query('ROLLBACK')
+        #  halt_with_error 404, 'seller not found'
+        #end
         seller = {
           'id' => items['sid'],
           'account_name' => items['san'],
