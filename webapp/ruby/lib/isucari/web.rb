@@ -347,7 +347,7 @@ module Isucari
 
       item_details = items.map do |item|
         # seller = get_user_simple_by_id(item['seller_id'])
-        seller = if item['sid'].nil
+        seller = unless item['sid'].nil?
           {
             'id' => items['sid'],
             'account_name' => items['san'],
