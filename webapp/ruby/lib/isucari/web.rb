@@ -387,11 +387,13 @@ module Isucari
         if item['buyer_id'] != 0
           #buyer = get_user_simple_by_id(item['buyer_id'])
           buyer = unless item['bid'].nil?
-          {
-            'id' => item['bid'],
-            'account_name' => item['ban'],
-            'num_sell_items' => item['bsi']
-          }
+            {
+              'id' => item['bid'],
+              'account_name' => item['ban'],
+              'num_sell_items' => item['bsi']
+            }
+          end
+
           if buyer.nil?
             db.query('ROLLBACK')
             halt_with_error 404, 'buyer not found'
