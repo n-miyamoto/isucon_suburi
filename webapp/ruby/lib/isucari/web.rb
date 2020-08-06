@@ -403,9 +403,11 @@ module Isucari
           item_detail['buyer'] = buyer
         end
 
-        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first
-        unless transaction_evidence.nil?
-          shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
+        #transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first
+        #unless transaction_evidence.nil?
+        unless item['tid'].nil?
+          #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
+          shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
           if shipping.nil?
             db.query('ROLLBACK')
             halt_with_error 404, 'shipping not found'
@@ -418,8 +420,10 @@ module Isucari
             halt_with_error 500, 'failed to request to shipment service'
           end
 
-          item_detail['transaction_evidence_id'] = transaction_evidence['id']
-          item_detail['transaction_evidence_status'] = transaction_evidence['status']
+          #item_detail['transaction_evidence_id'] = transaction_evidence['id']
+          item_detail['transaction_evidence_id'] = item['tid']
+          #item_detail['transaction_evidence_status'] = transaction_evidence['status']
+          item_detail['transaction_evidence_status'] = item['ts']
           item_detail['shipping_status'] = ssr['status']
         end
 
