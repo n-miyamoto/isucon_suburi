@@ -347,16 +347,17 @@ module Isucari
 
       item_details = items.map do |item|
         # seller = get_user_simple_by_id(item['seller_id'])
-        # if seller.nil?
-        #if item['san'].nil?
-        #  db.query('ROLLBACK')
-        #  halt_with_error 404, 'seller not found'
-        #end
-        seller = {
-          'id' => items['sid'],
-          'account_name' => items['san'],
-          'num_sell_items' => user['ssi']
-        }
+        seller = if item['sid'].nil
+          {
+            'id' => items['sid'],
+            'account_name' => items['san'],
+            'num_sell_items' => user['ssi']
+          }
+        end
+        if seller.nil?
+          db.query('ROLLBACK')
+          halt_with_error 404, 'seller not found'
+        end
 
         category = get_category_by_id(item['category_id'])
         if category.nil?
