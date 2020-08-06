@@ -349,9 +349,9 @@ module Isucari
         # seller = get_user_simple_by_id(item['seller_id'])
         seller = unless item['sid'].nil?
           {
-            'id' => items['sid'],
-            'account_name' => items['san'],
-            'num_sell_items' => user['ssi']
+            'id' => item['sid'],
+            'account_name' => item['san'],
+            'num_sell_items' => item['ssi']
           }
         end
         if seller.nil?
