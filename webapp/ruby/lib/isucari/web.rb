@@ -355,16 +355,17 @@ module Isucari
       end
 
       item_details = items.map do |item|
-        #seller = get_user_simple_by_id(item['seller_id'])
-        if item[san].nil?
+        seller = get_user_simple_by_id(item['seller_id'])
+        #if item[san].nil?
+        if seller.nil?
           db.query('ROLLBACK')
           halt_with_error 404, 'seller not found'
         end
-        seller = {
-          'id' => items['seller_id'],
-          'account_name' => user['san'],
-          'num_sell_items' => user['ssi']
-        }
+        #seller = {
+        #  'id' => items['seller_id'],
+        #  'account_name' => user['san'],
+        #  'num_sell_items' => user['ssi']
+        #}
 
         category = get_category_by_id(item['category_id'])
         if category.nil?
@@ -392,25 +393,25 @@ module Isucari
         }
 
         if item['buyer_id'] != 0
-          #buyer = get_user_simple_by_id(item['buyer_id'])
-          #if buyer.nil?
-          if item['ban'].nil?
+          buyer = get_user_simple_by_id(item['buyer_id'])
+          if buyer.nil?
+          #if item['ban'].nil?
             db.query('ROLLBACK')
             halt_with_error 404, 'buyer not found'
           end
-          buyer = {
-            'id' => items['buyer_id'],
-            'account_name' => user['ban'],
-            'num_sell_items' => user['bsi']
-          }
+          #buyer = {
+          #  'id' => items['buyer_id'],
+          #  'account_name' => user['ban'],
+          #  'num_sell_items' => user['bsi']
+          #}
 
           item_detail['buyer_id'] = item['buyer_id']
           item_detail['buyer'] = buyer
         end
 
-        #transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first
-        #unless transaction_evidence.nil?
-        unless item['ts'].nil?
+        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first
+        unless transaction_evidence.nil?
+        #unless item['ts'].nil?
           shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
           if shipping.nil?
             db.query('ROLLBACK')
@@ -424,10 +425,10 @@ module Isucari
             halt_with_error 500, 'failed to request to shipment service'
           end
 
-          #item_detail['transaction_evidence_id'] = transaction_evidence['id']
-          item_detail['transaction_evidence_id'] = item['tid']
-          #item_detail['transaction_evidence_status'] = transaction_evidence['status']
-          item_detail['transaction_evidence_status'] = item['ts']
+          item_detail['transaction_evidence_id'] = transaction_evidence['id']
+          #item_detail['transaction_evidence_id'] = item['tid']
+          item_detail['transaction_evidence_status'] = transaction_evidence['status']
+          #item_detail['transaction_evidence_status'] = item['ts']
           item_detail['shipping_status'] = ssr['status']
         end
 
