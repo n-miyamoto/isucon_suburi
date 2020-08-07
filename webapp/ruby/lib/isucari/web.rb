@@ -5,6 +5,8 @@ require 'mysql2'
 require 'mysql2-cs-bind'
 require 'bcrypt'
 require 'isucari/api'
+require 'eventmachine'
+require 'em-http'
 
 module Isucari
   class Web < Sinatra::Base
