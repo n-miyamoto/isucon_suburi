@@ -5,9 +5,6 @@ require 'mysql2'
 require 'mysql2-cs-bind'
 require 'bcrypt'
 require 'isucari/api'
-require 'eventmachine'
-require 'em-http'
-require 'thread'
 
 module Isucari
   class Web < Sinatra::Base
@@ -378,7 +375,7 @@ module Isucari
                db.query('ROLLBACK')
                halt_with_error 404, 'shipping not found'
              end
-          threads[i] = thread.new{
+          threads[i] = Thread.new{
             ssr[i] = api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shipping[i]['reserve_id'])
           }
         end
