@@ -257,13 +257,32 @@ module Isucari
       created_at = params['created_at'].to_i
 
       items = if item_id > 0 && created_at > 0
-        db.xquery("SELECT * FROM `items` WHERE `status` IN (?, ?) AND category_id IN (?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids, Time.at(created_at), Time.at(created_at), item_id)
-      else
-        db.xquery("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids)
+        #db.xquery("SELECT * FROM `items` WHERE `status` IN (?, ?) AND category_id IN (?) AND (`created_at` < ?  OR (`created_at` <= ? AND `id` < ?)) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids, Time.at(created_at), Time.at(created_at), item_id)
+        db.xquery("SELECT i.*,
+                           s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi
+                   FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
+                   WHERE i.`status` IN (?, ?) AND i.`category_id` IN (?) AND (i.`created_at` < ?  OR (i.`created_at` <= ? AND i.`id` < ?)) 
+                   ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", 
+                   ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids, Time.at(created_at), Time.at(created_at), item_id)
+     else
+        #db.xquery("SELECT * FROM `items` WHERE `status` IN (?,?) AND category_id IN (?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids)
+        db.xquery("SELECT i.*,
+                           s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi
+                   FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
+                   WHERE i.`status` IN (?,?) AND i.`category_id` IN (?) 
+                   ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", 
+                   ITEM_STATUS_ON_SALE, ITEM_STATUS_SOLD_OUT, category_ids)
       end
 
       item_simples = items.map do |item|
-        seller = get_user_simple_by_id(item['seller_id'])
+        #seller = get_user_simple_by_id(item['seller_id'])
+        seller = unless item['sid'].nil?
+          {
+            'id' => item['sid'],
+            'account_name' => item['san'],
+            'num_sell_items' => item['ssi']
+          }
+        end
         halt_with_error 404, 'seller not found' if seller.nil?
 
         category = get_category_by_id(item['category_id'])
