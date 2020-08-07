@@ -368,6 +368,7 @@ module Isucari
       threads = []
       shippings = []
       ssr = []
+      url = get_shipment_service_url
       items.each_with_index do |item,i|
         unless item['tid'].nil?
           shippings[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
@@ -378,7 +379,7 @@ module Isucari
 	      threads[i] = Thread.new{
           unless item['tid'].nil?
             ssr[i] = begin
-              api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shippings[i]['reserve_id'])
+              api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
             rescue
             end
           end
