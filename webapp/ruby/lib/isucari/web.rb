@@ -366,19 +366,20 @@ module Isucari
 
       # create requests
       threads = []
-      shipping = []
+      shippings = []
       ssr = []
       items.each_with_index do |item,i|
         unless item['tid'].nil?
-          shipping[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
-             if shipping[i].nil?
-               db.query('ROLLBACK')
+          shippings[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
+             if shippings[i].nil?
                halt_with_error 404, 'shipping not found'
              end
-          threads[i] = Thread.new{
-            ssr[i] = api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shipping[i]['reserve_id'])
-          }
-        end
+	end
+	threads[i] = Thread.new{
+          unless item['tid'].nil?
+            ssr[i] = api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shippings[i]['reserve_id'])
+	  end
+        }
       end
 
       item_details = items.map do |item|
@@ -443,24 +444,24 @@ module Isucari
         #unless transaction_evidence.nil?
         unless item['tid'].nil?
           #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
-          shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
-          if shipping.nil?
+          #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
+          #if shipping.nil?
             #db.query('ROLLBACK')
-            halt_with_error 404, 'shipping not found'
-          end
+            #halt_with_error 404, 'shipping not found'
+          #end
 
-          ssr = begin
-            api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shipping['reserve_id'])
-          rescue
-            #db.query('ROLLBACK')
-            halt_with_error 500, 'failed to request to shipment service'
-          end
+          #sstr = begin
+          #  api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shipping['reserve_id'])
+          #rescue
+          #  #db.query('ROLLBACK')
+          #  halt_with_error 500, 'failed to request to shipment service'
+          #end
 
           #item_detail['transaction_evidence_id'] = transaction_evidence['id']
           item_detail['transaction_evidence_id'] = item['tid']
           #item_detail['transaction_evidence_status'] = transaction_evidence['status']
           item_detail['transaction_evidence_status'] = item['ts']
-          item_detail['shipping_status'] = ssr['status']
+          #item_detail['shipping_status'] = sstr['status']
         end
 
         item_detail
@@ -469,10 +470,14 @@ module Isucari
       #db.query('COMMIT')
 
       # join threads
-      threads.each { |thr| thr.join }
-      #items.each_with_index do |item,i|
-      #  item_details[i]['shipping_status'] = ssr[i]['status']
-      #end
+      threads.each do |thr| 
+          thr.join 
+      end
+      items.each_with_index do |item,i|
+	      unless ssr[i].nil?
+        	item_details[i]['shipping_status'] = ssr[i]['status']
+	      end
+      end
 
       has_next = false
       if item_details.length > TRANSACTIONS_PER_PAGE
