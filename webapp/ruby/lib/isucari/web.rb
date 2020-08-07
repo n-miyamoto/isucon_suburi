@@ -275,7 +275,14 @@ module Isucari
       end
 
       item_simples = items.map do |item|
-        seller = get_user_simple_by_id(item['seller_id'])
+        #seller = get_user_simple_by_id(item['seller_id'])
+        seller = unless item['sid'].nil?
+          {
+            'id' => item['sid'],
+            'account_name' => item['san'],
+            'num_sell_items' => item['ssi']
+          }
+        end
         halt_with_error 404, 'seller not found' if seller.nil?
 
         category = get_category_by_id(item['category_id'])
