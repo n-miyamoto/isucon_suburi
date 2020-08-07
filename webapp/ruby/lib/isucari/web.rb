@@ -306,7 +306,7 @@ module Isucari
       item_id = params['item_id'].to_i
       created_at = params['created_at'].to_i
 
-      db.query('BEGIN')
+      #db.query('BEGIN')
       items = if item_id > 0 && created_at > 0
         # paging
         begin
@@ -315,12 +315,14 @@ module Isucari
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
                              t.`id` tid, t.`status` ts
-                    FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
+                     FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
-                    WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) AND (i.`created_at` < ?  OR (i.`created_at` <= ? AND i.`id` < ?)) ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
+                     WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) AND (i.`created_at` < ?  OR (i.`created_at` <= ? AND i.`id` < ?)) 
+                     ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", 
+                     user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
         rescue
-          db.query('ROLLBACK')
+          #db.query('ROLLBACK')
           halt_with_error 500, 'db error'
         end
       else
@@ -334,31 +336,32 @@ module Isucari
                     FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
-                    WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}"
-                    , user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
-        
+                    WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) 
+                    ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", 
+                    user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
         rescue
-          db.query('ROLLBACK')
+          #db.query('ROLLBACK')
           halt_with_error 500, 'db error'
         end
       end
 
       item_details = items.map do |item|
-        #seller = get_user_simple_by_id(item['seller_id'])
-        seller = {
-          'id' => items['sid'],
-          'account_name' => user['san'],
-          'num_sell_items' => user['ssi']
-        }
-        #if seller.nil?
-        if items['san'].nil?
-          db.query('ROLLBACK')
+        # seller = get_user_simple_by_id(item['seller_id'])
+        seller = unless item['sid'].nil?
+          {
+            'id' => item['sid'],
+            'account_name' => item['san'],
+            'num_sell_items' => item['ssi']
+          }
+        end
+        if seller.nil?
+          #db.query('ROLLBACK')
           halt_with_error 404, 'seller not found'
         end
 
         category = get_category_by_id(item['category_id'])
         if category.nil?
-          db.query('ROLLBACK')
+          #db.query('ROLLBACK')
           halt_with_error 404, 'category not found'
         end
 
@@ -383,14 +386,16 @@ module Isucari
 
         if item['buyer_id'] != 0
           #buyer = get_user_simple_by_id(item['buyer_id'])
-          buyer = {
-            'id' => items['bid'],
-            'account_name' => user['ban'],
-            'num_sell_items' => user['bsi']
-          }
- 
-          if items['ban'].nil?
-            db.query('ROLLBACK')
+          buyer = unless item['bid'].nil?
+            {
+              'id' => item['bid'],
+              'account_name' => item['ban'],
+              'num_sell_items' => item['bsi']
+            }
+          end
+
+          if buyer.nil?
+            #db.query('ROLLBACK')
             halt_with_error 404, 'buyer not found'
           end
 
@@ -400,31 +405,32 @@ module Isucari
 
         #transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item['id']).first
         #unless transaction_evidence.nil?
-        unless items['tid'].nil?
-          shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
+        unless item['tid'].nil?
+          #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
+          shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
           if shipping.nil?
-            db.query('ROLLBACK')
+            #db.query('ROLLBACK')
             halt_with_error 404, 'shipping not found'
           end
 
           ssr = begin
             api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shipping['reserve_id'])
           rescue
-            db.query('ROLLBACK')
+            #db.query('ROLLBACK')
             halt_with_error 500, 'failed to request to shipment service'
           end
 
-          # item_detail['transaction_evidence_id'] = transaction_evidence['id']
-          item_detail['transaction_evidence_id'] = items['tid']
+          #item_detail['transaction_evidence_id'] = transaction_evidence['id']
+          item_detail['transaction_evidence_id'] = item['tid']
           #item_detail['transaction_evidence_status'] = transaction_evidence['status']
-          item_detail['transaction_evidence_status'] = items['ts']
+          item_detail['transaction_evidence_status'] = item['ts']
           item_detail['shipping_status'] = ssr['status']
         end
 
         item_detail
       end
 
-      db.query('COMMIT')
+      #db.query('COMMIT')
 
       has_next = false
       if item_details.length > TRANSACTIONS_PER_PAGE
