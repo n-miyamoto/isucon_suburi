@@ -371,14 +371,17 @@ module Isucari
       items.each_with_index do |item,i|
         unless item['tid'].nil?
           shippings[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
-             if shippings[i].nil?
-               halt_with_error 404, 'shipping not found'
-             end
-	end
-	threads[i] = Thread.new{
+          if shippings[i].nil?
+            halt_with_error 404, 'shipping not found'
+          end
+	      end
+	      threads[i] = Thread.new{
           unless item['tid'].nil?
-            ssr[i] = api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shippings[i]['reserve_id'])
-	  end
+            ssr[i] = begin
+              api_client.shipment_status(get_shipment_service_url, 'reserve_id' => shippings[i]['reserve_id'])
+            rescue
+            end
+          end
         }
       end
 
