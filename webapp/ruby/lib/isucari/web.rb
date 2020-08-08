@@ -713,7 +713,7 @@ module Isucari
       
       begin
         #seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', target_item['seller_id']).first
-        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', target_item['seller_id']).first
+        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? LIMIT 1', target_item['seller_id']).first
         
         if seller.nil?
           db.query('ROLLBACK')
@@ -735,13 +735,13 @@ module Isucari
       end
 
       # async request
-      pstr_thread = Thread.new{
+      #pstr_thread = Thread.new{
         #pstr = begin
         #  #api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
         #rescue
         #  nil
         #end
-      }
+      #}
 
       category = get_category_by_id(target_item['category_id'])
       if category.nil?
@@ -793,7 +793,7 @@ module Isucari
       end
       
       # wait api
-      pstr_thread.join
+      #pstr_thread.join
       if pstr.nil? 
         db.query('ROLLBACK')
         halt_with_error 500, 'payment service is failed'
