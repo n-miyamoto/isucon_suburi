@@ -90,6 +90,9 @@ module Isucari
         }
       end
 
+      def get_all_categories()
+      end
+
       def get_category_by_id(category_id)
         categories_hash = {
             1 => { 'id' => 1,  'parent_id' =>  0, 'category_name' => "ソファー" , 'parent_category_name' => nil },
@@ -190,7 +193,7 @@ module Isucari
 
       response = {
         # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-        'campaign' => 1,
+        'campaign' => 0,
         # 実装言語を返す
         'language' => 'ruby',
       }
@@ -1331,6 +1334,7 @@ module Isucari
       user = db.xquery('SELECT * FROM `users` WHERE `account_name` = ?', account_name).first
 
       if user.nil? || BCrypt::Password.new(user['hashed_password']) != password
+      #if user.nil? || user['hashed_password'] != (password+'#')
         halt_with_error 401, 'アカウント名かパスワードが間違えています'
       end
 
@@ -1351,6 +1355,7 @@ module Isucari
       end
 
       hashed_password = BCrypt::Password.create(password, 'cost' => BCRYPT_COST)
+      #hashed_password = password + '#'
 
       db.xquery('INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)', account_name, hashed_password, address)
       user_id = db.last_id
