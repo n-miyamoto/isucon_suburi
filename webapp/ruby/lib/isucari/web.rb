@@ -736,11 +736,11 @@ module Isucari
 
       # async request
       pstr_thread = Thread.new{
-        pstr = begin
-          api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
-        rescue
-          nil
-        end
+        #pstr = begin
+        #  #api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        #rescue
+        #  nil
+        #end
       }
 
       category = get_category_by_id(target_item['category_id'])
@@ -772,12 +772,12 @@ module Isucari
       #  halt_with_error 500, 'failed to request to shipment service'
       #end
 
-      #begin
-      #  pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
-      #rescue
-      #  db.query('ROLLBACK')
-      #  halt_with_error 500, 'payment service is failed'
-      #end
+      begin
+        pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+      rescue
+        db.query('ROLLBACK')
+        halt_with_error 500, 'payment service is failed'
+      end
 
       # wait api
       scr_thread.join
