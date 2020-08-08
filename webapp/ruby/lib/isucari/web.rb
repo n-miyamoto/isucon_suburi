@@ -141,11 +141,14 @@ module Isucari
       end
 
       def get_config_by_name(name)
-        config = db.xquery('SELECT * FROM `configs` WHERE `name` = ?', name).first
-
-        return if config.nil?
-
-        config['val']
+        #config = db.xquery('SELECT * FROM `configs` WHERE `name` = ?', name).first
+        if name == 'payment_service_url'
+          return 'http://localhost:5555'
+        end
+        if name == 'shipment_service_url'
+          return 'http://localhost:7000'
+        end
+        return nil
       end
 
       def get_payment_service_url
@@ -498,14 +501,34 @@ module Isucari
 
       items = if item_id > 0 && created_at > 0
         # paging
-        db.xquery("SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?, ?, ?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", user_simple['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, Time.at(created_at), item_id)
+        #db.xquery("SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?, ?, ?) AND `created_at` <= ? AND `id` < ? ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", user_simple['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, Time.at(created_at), item_id)
+        db.xquery("SELECT i.*, 
+                           s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi
+                   FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
+                   WHERE i.`seller_id` = ? AND i.`status` IN (?, ?, ?) AND i.`created_at` <= ? AND i.`id` < ? 
+                   ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", 
+                   user_simple['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, Time.at(created_at), item_id)
       else
         # 1st page
-        db.xquery("SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?, ?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", user_simple['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT)
+        #db.xquery("SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?, ?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", user_simple['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT)
+        db.xquery("SELECT i.*,
+                           s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi
+                   FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
+                   WHERE i.`seller_id` = ? AND i.`status` IN (?, ?, ?) 
+                   ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", 
+                   user_simple['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT)
       end
 
       item_simples = items.map do |item|
-        seller = get_user_simple_by_id(item['seller_id'])
+        #seller = get_user_simple_by_id(item['seller_id'])
+        seller = unless item['sid'].nil?
+          {
+            'id' => item['sid'],
+            'account_name' => item['san'],
+            'num_sell_items' => item['ssi']
+          }
+        end
+ 
         halt_with_error 404, 'seller not found' if seller.nil?
 
         category = get_category_by_id(item['category_id'])
@@ -547,7 +570,7 @@ module Isucari
 
       user = get_user
 
-      item = db.xquery('SELECT * FROM `items` WHERE `id` = ?', item_id).first
+      item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1', item_id).first
       halt_with_error 404, 'item not found' if item.nil?
 
       category = get_category_by_id(item['category_id'])
@@ -660,14 +683,19 @@ module Isucari
       halt_with_error 404, 'buyer not found' if buyer.nil?
 
       db.query('BEGIN')
-
+      scr_thread = nil
+      pstr_thread = nil
+      pstr = nil
+      scr = nil
       begin
-        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        #target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', item_id).first
 
         if target_item.nil?
           db.query('ROLLBACK')
           halt_with_error 404, 'item not found'
         end
+
       rescue
         db.query('ROLLBACK')
         halt_with_error 500, 'db error'
@@ -682,18 +710,38 @@ module Isucari
         db.query('ROLLBACK')
         halt_with_error 403, '自分の商品は買えません'
       end
-
+      
       begin
-        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', target_item['seller_id']).first
-
+        #seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', target_item['seller_id']).first
+        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', target_item['seller_id']).first
+        
         if seller.nil?
           db.query('ROLLBACK')
-          halt_with_error 404, 'seller not found'
+          MIhalt_with_error 404, 'seller not found'
         end
+
+        # async request
+        scr_thread = Thread.new{
+          scr = begin
+            api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
+          rescue
+            nil
+          end
+        }
+        
       rescue
         db.query('ROLLBACK')
         halt_with_error 500, 'db error'
       end
+
+      # async request
+      pstr_thread = Thread.new{
+        pstr = begin
+          api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        rescue
+          nil
+        end
+      }
 
       category = get_category_by_id(target_item['category_id'])
       if category.nil?
@@ -717,20 +765,39 @@ module Isucari
         halt_with_error 500, 'db error'
       end
 
-      begin
-        scr = api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
-      rescue
+      #begin
+      #  scr = api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
+      #rescue
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'failed to request to shipment service'
+      #end
+
+      #begin
+      #  pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+      #rescue
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'payment service is failed'
+      #end
+
+      # wait api
+      scr_thread.join
+      if scr.nil? 
         db.query('ROLLBACK')
         halt_with_error 500, 'failed to request to shipment service'
       end
-
       begin
-        pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
       rescue
+        db.query('ROLLBACK')
+        halt_with_error 500, 'db error'
+      end
+      
+      # wait api
+      pstr_thread.join
+      if pstr.nil? 
         db.query('ROLLBACK')
         halt_with_error 500, 'payment service is failed'
       end
-
       if pstr['status'] == 'invalid'
         db.query('ROLLBACK')
         halt_with_error 400, 'カード情報に誤りがあります'
@@ -740,17 +807,9 @@ module Isucari
         db.query('ROLLBACK')
         halt_with_error 400, 'カードの残高が足りません'
       end
-
       if pstr['status'] != 'ok'
         db.query('ROLLBACK')
         halt_with_error 400, '想定外のエラー'
-      end
-
-      begin
-        db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
-      rescue
-        db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
       end
 
       db.query('COMMIT')
@@ -843,7 +902,7 @@ module Isucari
       seller = get_user
       halt_with_error 404, 'seller not found' if seller.nil?
 
-      transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item_id).first
+      transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ? LIMIT 1', item_id).first
       halt_with_error 404, 'transaction_evidences not found' if transaction_evidence.nil?
 
       halt_with_error 403, '権限がありません' if transaction_evidence['seller_id'] != seller['id']
@@ -851,7 +910,7 @@ module Isucari
       db.query('BEGIN')
 
       begin
-        item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 FOR UPDATE', item_id).first
 
         if item.nil?
           db.query('ROLLBACK')
@@ -868,7 +927,7 @@ module Isucari
       end
 
       begin
-        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE', transaction_evidence['id']).first
+        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` = ? LIMIT 1 FOR UPDATE', transaction_evidence['id']).first
 
         if transaction_evidence.nil?
           db.query('ROLLBACK')
@@ -885,7 +944,7 @@ module Isucari
       end
 
       begin
-        shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE', transaction_evidence['id']).first
+        shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? LIMIT 1 FOR UPDATE', transaction_evidence['id']).first
 
         if shipping.nil?
           db.query('ROLLBACK')
@@ -930,7 +989,7 @@ module Isucari
       seller = get_user
       halt_with_error 404, 'seller not found' if seller.nil?
 
-      transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item_id).first
+      transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ? LIMIT 1', item_id).first
       halt_with_error 404, 'transaction_evidence not found' if transaction_evidence.nil?
 
       if transaction_evidence['seller_id'] != seller['id']
@@ -940,7 +999,7 @@ module Isucari
       db.query('BEGIN')
 
       begin
-        item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 FOR UPDATE', item_id).first
 
         if item.nil?
           db.query('ROLLBACK')
@@ -957,7 +1016,7 @@ module Isucari
       end
 
       begin
-        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` = ? FOR UPDATE', transaction_evidence['id']).first
+        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `id` = ? LIMIT 1 FOR UPDATE', transaction_evidence['id']).first
 
         if transaction_evidence.nil?
           db.query('ROLLBACK')
@@ -973,7 +1032,7 @@ module Isucari
       end
 
       begin
-        shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE', transaction_evidence['id']).first
+        shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? LIMIT 1 FOR UPDATE', transaction_evidence['id']).first
 
         if shipping.nil?
           db.query('ROLLBACK')
@@ -1030,7 +1089,7 @@ module Isucari
       buyer = get_user
       halt_with_error 404, 'buyer not found' if buyer.nil?
 
-      transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ?', item_id).first
+      transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ? LIMIT 1', item_id).first
       halt_with_error 404, 'transaction_evidence not found' if transaction_evidence.nil?
 
       if transaction_evidence['buyer_id'] != buyer['id']
@@ -1040,7 +1099,7 @@ module Isucari
       db.query('BEGIN')
 
       begin
-        item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 FOR UPDATE', item_id).first
 
         if item.nil?
           db.query('ROLLBACK')
@@ -1057,7 +1116,7 @@ module Isucari
       end
 
       begin
-        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ? FOR UPDATE', item_id).first
+        transaction_evidence = db.xquery('SELECT * FROM `transaction_evidences` WHERE `item_id` = ? LIMIT 1 FOR UPDATE', item_id).first
 
         if transaction_evidence.nil?
           db.query('ROLLBACK')
@@ -1074,7 +1133,7 @@ module Isucari
       end
 
       begin
-        shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? FOR UPDATE', transaction_evidence['id']).first
+        shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ? LIMIT 1 FOR UPDATE', transaction_evidence['id']).first
 
         if shipping.nil?
           db.query('ROLLBACK')
