@@ -90,6 +90,54 @@ module Isucari
         }
       end
 
+      def get_all_categories()
+        categories_array = [
+            { 'id' => 1,  'parent_id' =>  0, 'category_name' => "ソファー" },
+            { 'id' => 2,  'parent_id' =>  1, 'category_name' => "一人掛けソファー" },
+            { 'id' => 3,  'parent_id' =>  1, 'category_name' => "二人掛けソファー" },
+            { 'id' => 4,  'parent_id' =>  1, 'category_name' => "コーナーソファー" },
+            { 'id' => 5,  'parent_id' =>  1, 'category_name' => "二段ソファー" },
+            { 'id' => 6,  'parent_id' =>  1, 'category_name' => "ソファーベッド" },
+            { 'id' => 10, 'parent_id' =>  0, 'category_name' => "家庭用チェア" },
+            { 'id' => 11, 'parent_id' => 10, 'category_name' => "スツール" },
+            { 'id' => 12, 'parent_id' => 10, 'category_name' => "クッションスツール" },
+            { 'id' => 13, 'parent_id' => 10, 'category_name' => "ダイニングチェア" },
+            { 'id' => 14, 'parent_id' => 10, 'category_name' => "リビングチェア" },
+            { 'id' => 15, 'parent_id' => 10, 'category_name' => "カウンターチェア"},
+            { 'id' => 20, 'parent_id' =>  0, 'category_name' => "キッズチェア" },
+            { 'id' => 21, 'parent_id' => 20, 'category_name' => "学習チェア" },
+            { 'id' => 22, 'parent_id' => 20, 'category_name' => "ベビーソファ" },
+            { 'id' => 23, 'parent_id' => 20, 'category_name' => "キッズハイチェア" },
+            { 'id' => 24, 'parent_id' => 20, 'category_name' => "テーブルチェア" },
+            { 'id' => 30, 'parent_id' =>  0, 'category_name' => "オフィスチェア"},
+            { 'id' => 31, 'parent_id' => 30, 'category_name' => "デスクチェア" },
+            { 'id' => 32, 'parent_id' => 30, 'category_name' => "ビジネスチェア"},
+            { 'id' => 33, 'parent_id' => 30, 'category_name' => "回転チェア" },
+            { 'id' => 34, 'parent_id' => 30, 'category_name' => "リクライニングチェア" },
+            { 'id' => 35, 'parent_id' => 30, 'category_name' => "投擲用椅子" },
+            { 'id' => 40, 'parent_id' => 0, 'category_name' => "折りたたみ椅子"},
+            { 'id' => 41, 'parent_id' => 40, 'category_name' => "パイプ椅子" },
+            { 'id' => 42, 'parent_id' => 40, 'category_name' => "木製折りたたみ椅子" },
+            { 'id' => 43, 'parent_id' => 40, 'category_name' => "キッチンチェア" },
+            { 'id' => 44, 'parent_id' => 40, 'category_name' => "アウトドアチェア" },
+            { 'id' => 45, 'parent_id' => 40, 'category_name' => "作業椅子" },
+            { 'id' => 50, 'parent_id' =>  0, 'category_name' => "ベンチ" },
+            { 'id' => 51, 'parent_id' => 50, 'category_name' => "一人掛けベンチ" },
+            { 'id' => 52, 'parent_id' => 50, 'category_name' => "二人掛けベンチ"  },
+            { 'id' => 53, 'parent_id' => 50, 'category_name' => "アウトドア用ベンチ" },
+            { 'id' => 54, 'parent_id' => 50, 'category_name' => "収納付きベンチ"  },
+            { 'id' => 55, 'parent_id' => 50, 'category_name' => "背もたれ付きベンチ" },
+            { 'id' => 56, 'parent_id' => 50, 'category_name' => "ベンチマーク" },
+            { 'id' => 60, 'parent_id' =>  0, 'category_name' => "座椅子"     },
+            { 'id' => 61, 'parent_id' => 60, 'category_name' => "和風座椅子" },
+            { 'id' => 62, 'parent_id' => 60, 'category_name' => "高座椅子" },
+            { 'id' => 63, 'parent_id' => 60, 'category_name' => "ゲーミング座椅子" },
+            { 'id' => 64, 'parent_id' => 60, 'category_name' => "ロッキングチェア" },
+            { 'id' => 65, 'parent_id' => 60, 'category_name' => "座布団" },
+            { 'id' => 66, 'parent_id' => 60, 'category_name' => "空気椅子"}  
+        ]
+      end
+
       def get_category_by_id(category_id)
         categories_hash = {
             1 => { 'id' => 1,  'parent_id' =>  0, 'category_name' => "ソファー" , 'parent_category_name' => nil },
@@ -688,8 +736,8 @@ module Isucari
       pstr = nil
       scr = nil
       begin
-        #target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
-        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', item_id).first
+        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        #target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', item_id).first
 
         if target_item.nil?
           db.query('ROLLBACK')
@@ -698,7 +746,7 @@ module Isucari
 
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 501, 'db error'
       end
 
       if target_item['status'] != ITEM_STATUS_ON_SALE
@@ -713,7 +761,7 @@ module Isucari
       
       begin
         #seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', target_item['seller_id']).first
-        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', target_item['seller_id']).first
+        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? LIMIT 1', target_item['seller_id']).first
         
         if seller.nil?
           db.query('ROLLBACK')
@@ -731,7 +779,7 @@ module Isucari
         
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 502, 'db error'
       end
 
       # async request
@@ -746,14 +794,14 @@ module Isucari
       category = get_category_by_id(target_item['category_id'])
       if category.nil?
         db.query('ROLLBACK')
-        halt_with_error 500, 'category id error'
+        halt_with_error 503, 'category id error'
       end
 
       begin
         db.xquery('INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', target_item['seller_id'], buyer['id'], TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING, target_item['id'], target_item['name'], target_item['price'], target_item['description'], category['id'], category['parent_id'])
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 504, 'db error'
       end
 
       transaction_evidence_id = db.last_id
@@ -762,29 +810,31 @@ module Isucari
         db.xquery('UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?', buyer['id'], ITEM_STATUS_TRADING, Time.now, target_item['id'])
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 505, 'db error'
       end
 
       #begin
-      #  scr = api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
+        #scr = api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
       #rescue
-      #  db.query('ROLLBACK')
-      #  halt_with_error 500, 'failed to request to shipment service'
-      #end
+      scr_thread.join
+      if scr.nil?
+        db.query('ROLLBACK')
+        halt_with_error 506, 'failed to request to shipment service'
+      end
 
       #begin
-      #  pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        #pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
       #rescue
       #  db.query('ROLLBACK')
-      #  halt_with_error 500, 'payment service is failed'
+      #  halt_with_error 507, 'payment service is failed'
       #end
 
       # wait api
-      scr_thread.join
-      if scr.nil? 
-        db.query('ROLLBACK')
-        halt_with_error 500, 'failed to request to shipment service'
-      end
+      #scr_thread.join
+      #if scr.nil? 
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'failed to request to shipment service'
+      #end
       begin
         db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
       rescue
@@ -811,6 +861,14 @@ module Isucari
         db.query('ROLLBACK')
         halt_with_error 400, '想定外のエラー'
       end
+
+      #begin
+      #  db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
+      #rescue
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'db error'
+      #end
+      
 
       db.query('COMMIT')
 
@@ -1303,7 +1361,8 @@ module Isucari
       response['user'] = user unless user.nil?
       response['payment_service_url'] = get_payment_service_url
 
-      categories = db.xquery('SELECT * FROM `categories`').to_a
+      #categories = db.xquery('SELECT * FROM `categories`').to_a
+      categories = get_all_categories.to_a
       response['categories'] = categories
 
       response.to_json
@@ -1321,6 +1380,7 @@ module Isucari
       user = db.xquery('SELECT * FROM `users` WHERE `account_name` = ?', account_name).first
 
       if user.nil? || BCrypt::Password.new(user['hashed_password']) != password
+      #if user.nil? || user['hashed_password'] != (password+'#')
         halt_with_error 401, 'アカウント名かパスワードが間違えています'
       end
 
@@ -1341,6 +1401,7 @@ module Isucari
       end
 
       hashed_password = BCrypt::Password.create(password, 'cost' => BCRYPT_COST)
+      #hashed_password = password + '#'
 
       db.xquery('INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)', account_name, hashed_password, address)
       user_id = db.last_id
