@@ -72,10 +72,9 @@ module Isucari
 
       def get_user
         user_id = session['user_id']
-
         return unless user_id
 
-        db.xquery('SELECT * FROM `users` WHERE `id` = ?', user_id).first
+        db.xquery('SELECT * FROM `users` WHERE `id` = ? LIMIT 1', user_id).first
       end
 
       def get_user_simple_by_id(user_id)
@@ -238,7 +237,7 @@ module Isucari
 
       response = {
         # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-        'campaign' => 0,
+        'campaign' => 1,
         # 実装言語を返す
         'language' => 'ruby',
       }
@@ -1379,16 +1378,21 @@ module Isucari
 
       user = db.xquery('SELECT * FROM `users` WHERE `account_name` = ?', account_name).first
 
-      if user.nil? || BCrypt::Password.new(user['hashed_password']) != password
-      #if user.nil? || user['hashed_password'] != (password+'#')
-        halt_with_error 401, 'アカウント名かパスワードが間違えています'
+      #if user.nil? || BCrypt::Password.new(user['hashed_password']) != password
+      if user.nil? || user['hashed_password'] != (password+'#')
+        if BCrypt::Password.new(user['hashed_password']) != password      
+          halt_with_error 401, 'アカウント名かパスワードが間違えています'
+        end
       end
 
       session['user_id'] = user['id']
       session['csrf_token'] = SecureRandom.hex(20)
 
+      #db.xquery('UPDATE `users` SET  `hashed_password` = ? WHERE `id` = ?', password +'#', user['id'])
+
       user.to_json
     end
+
 
     # postRegister
     post '/register' do
@@ -1400,8 +1404,8 @@ module Isucari
         halt_with_error 500, 'all parameters are required'
       end
 
-      hashed_password = BCrypt::Password.create(password, 'cost' => BCRYPT_COST)
-      #hashed_password = password + '#'
+      #hashed_password = BCrypt::Password.create(password, 'cost' => BCRYPT_COST)
+      hashed_password = password + '#'
 
       db.xquery('INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (?, ?, ?)', account_name, hashed_password, address)
       user_id = db.last_id
