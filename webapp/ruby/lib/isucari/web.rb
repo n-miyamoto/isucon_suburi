@@ -728,6 +728,15 @@ module Isucari
         halt_with_error 500, 'db error'
       end
 
+      # async request
+      pstr_thread = Thread.new{
+        pstr = begin
+          api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        rescue
+          nil
+        end
+      }
+
       category = get_category_by_id(target_item['category_id'])
       if category.nil?
         db.query('ROLLBACK')
@@ -763,14 +772,17 @@ module Isucari
       #  db.query('ROLLBACK')
       #  halt_with_error 500, 'payment service is failed'
       #end
+
+
       # async request
-      pstr_thread = Thread.new{
-        pstr = begin
-          api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
-        rescue
-          nil
-        end
-      }
+      #pstr_thread = Thread.new{
+      #  pstr = begin
+      #    api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+      #  rescue
+      #    nil
+      #  end
+      #}
+
       # wait api
       pstr_thread.join
       if pstr.nil? 
