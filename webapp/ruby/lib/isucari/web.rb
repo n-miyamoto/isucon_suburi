@@ -679,6 +679,8 @@ module Isucari
       halt_with_error 404, 'buyer not found' if buyer.nil?
 
       db.query('BEGIN')
+      scr_thread = nil
+      pstr_thread = nil
       pstr = nil
       scr = nil
       begin
@@ -688,8 +690,6 @@ module Isucari
           db.query('ROLLBACK')
           halt_with_error 404, 'item not found'
         end
-
-
 
       rescue
         db.query('ROLLBACK')
@@ -784,23 +784,23 @@ module Isucari
       #}
 
       # wait api
-      pstr_thread.join
-      if pstr.nil? 
-        db.query('ROLLBACK')
-        halt_with_error 500, 'payment service is failed'
-      end
-      if pstr['status'] == 'invalid'
-        db.query('ROLLBACK')
-        halt_with_error 400, 'カード情報に誤りがあります'
-      end
-      if pstr['status'] == 'fail'
-        db.query('ROLLBACK')
-        halt_with_error 400, 'カードの残高が足りません'
-      end
-      if pstr['status'] != 'ok'
-        db.query('ROLLBACK')
-        halt_with_error 400, '想定外のエラー'
-      end
+      #pstr_thread.join
+      #if pstr.nil? 
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'payment service is failed'
+      #end
+      #if pstr['status'] == 'invalid'
+      #  db.query('ROLLBACK')
+      #  halt_with_error 400, 'カード情報に誤りがあります'
+      #end
+      #if pstr['status'] == 'fail'
+      #  db.query('ROLLBACK')
+      #  halt_with_error 400, 'カードの残高が足りません'
+      #end
+      #if pstr['status'] != 'ok'
+      #  db.query('ROLLBACK')
+      #  halt_with_error 400, '想定外のエラー'
+      #end
 
       # wait api
       scr_thread.join
@@ -816,24 +816,24 @@ module Isucari
       end
       
       # wait api
-      #pstr_thread.join
-      #if pstr.nil? 
-      #  db.query('ROLLBACK')
-      #  halt_with_error 500, 'payment service is failed'
-      #end
-      #if pstr['status'] == 'invalid'
-      #  db.query('ROLLBACK')
-      #  halt_with_error 400, 'カード情報に誤りがあります'
-      #end
+      pstr_thread.join
+      if pstr.nil? 
+        db.query('ROLLBACK')
+        halt_with_error 500, 'payment service is failed'
+      end
+      if pstr['status'] == 'invalid'
+        db.query('ROLLBACK')
+        halt_with_error 400, 'カード情報に誤りがあります'
+      end
 
-      #if pstr['status'] == 'fail'
-      #  db.query('ROLLBACK')
-      #  halt_with_error 400, 'カードの残高が足りません'
-      #end
-      #if pstr['status'] != 'ok'
-      #  db.query('ROLLBACK')
-      #  halt_with_error 400, '想定外のエラー'
-      #end
+      if pstr['status'] == 'fail'
+        db.query('ROLLBACK')
+        halt_with_error 400, 'カードの残高が足りません'
+      end
+      if pstr['status'] != 'ok'
+        db.query('ROLLBACK')
+        halt_with_error 400, '想定外のエラー'
+      end
 
       db.query('COMMIT')
 
