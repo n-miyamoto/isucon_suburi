@@ -530,7 +530,7 @@ module Isucari
       else
         # 1st page
         #db.xquery("SELECT * FROM `items` WHERE `seller_id` = ? AND `status` IN (?, ?, ?) ORDER BY `created_at` DESC, `id` DESC LIMIT #{ITEMS_PER_PAGE + 1}", user_simple['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT)
-        db.xquery("SELECT i.* 
+        db.xquery("SELECT i.*,
                            s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi
                    FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                    WHERE i.`seller_id` = ? AND i.`status` IN (?, ?, ?) 
