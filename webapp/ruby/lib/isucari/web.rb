@@ -381,15 +381,6 @@ module Isucari
             halt_with_error 404, 'shipping not found'
           end
         end
-        #threads[i] = Thread.new{
-        #  unless item['tid'].nil?
-        #    ssr[i] = begin
-        #      #api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
-        #      api_client.shipment_status(url, 'reserve_id' => item['sprid'])
-        #    rescue
-        #    end
-        #  end
-        #}
       end
 
       item_details = items.map do |item|
@@ -454,7 +445,6 @@ module Isucari
         #unless transaction_evidence.nil?
         unless item['tid'].nil?
           #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
-          #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
           #if shipping.nil?
             #db.query('ROLLBACK')
             #halt_with_error 404, 'shipping not found'
@@ -479,16 +469,6 @@ module Isucari
       end
 
       #db.query('COMMIT')
-
-      # join threads
-      #threads.each do |thr| 
-      #    thr.join 
-      #end
-      #items.each_with_index do |item,i|
-	     # unless ssr[i].nil?
-      #  	#item_details[i]['shipping_status'] = ssr[i]['status']
-	     # end
-      #end
 
       has_next = false
       if item_details.length > TRANSACTIONS_PER_PAGE
