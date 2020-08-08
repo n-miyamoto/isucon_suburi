@@ -15,7 +15,7 @@ module Isucari
     def payment_token(payment_url, param)
       uri = URI.parse("#{payment_url}/token")
 
-      req = Net::HTTP::Post.new(uri.path)
+      req = Net::HTTP::Get.new(uri.path)
       req.body = param.to_json
       req['Content-Type'] = 'application/json'
       req['User-Agent'] = @user_agent
@@ -34,7 +34,7 @@ module Isucari
     def shipment_create(shipment_url, param)
       uri = URI.parse("#{shipment_url}/create")
 
-      req = Net::HTTP::Post.new(uri.path)
+      req = Net::HTTP::Get.new(uri.path)
       req.body = param.to_json
       req['Content-Type'] = 'application/json'
       req['User-Agent'] = @user_agent
@@ -54,7 +54,7 @@ module Isucari
     def shipment_request(shipment_url, param)
       uri = URI.parse("#{shipment_url}/request")
 
-      req = Net::HTTP::Post.new(uri.path)
+      req = Net::HTTP::Get.new(uri.path)
       req.body = param.to_json
       req['Content-Type'] = 'application/json'
       req['User-Agent'] = @user_agent
@@ -74,7 +74,7 @@ module Isucari
     def shipment_status(shipment_url, param)
       uri = URI.parse("#{shipment_url}/status")
 
-      req = Net::HTTP::Post.new(uri.path)
+      req = Net::HTTP::Get.new(uri.path)
       req.body = param.to_json
       req['Content-Type'] = 'application/json'
       req['User-Agent'] = @user_agent
