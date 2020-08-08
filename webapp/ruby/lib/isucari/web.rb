@@ -684,7 +684,8 @@ module Isucari
       pstr = nil
       scr = nil
       begin
-        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        #target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', item_id).first
 
         if target_item.nil?
           db.query('ROLLBACK')
@@ -707,11 +708,12 @@ module Isucari
       end
       
       begin
-        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', target_item['seller_id']).first
+        #seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', target_item['seller_id']).first
+        seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', target_item['seller_id']).first
         
         if seller.nil?
           db.query('ROLLBACK')
-          halt_with_error 404, 'seller not found'
+          MIhalt_with_error 404, 'seller not found'
         end
 
         # async request
