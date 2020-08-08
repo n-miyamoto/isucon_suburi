@@ -679,7 +679,8 @@ module Isucari
       halt_with_error 404, 'buyer not found' if buyer.nil?
 
       db.query('BEGIN')
-
+      pstr = nil
+      scr = nil
       begin
         target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
 
@@ -687,6 +688,16 @@ module Isucari
           db.query('ROLLBACK')
           halt_with_error 404, 'item not found'
         end
+
+        # async request
+        pstr_thread = Thread.new{
+          pstr = begin
+            api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+          rescue
+            nil
+          end
+        }
+
       rescue
         db.query('ROLLBACK')
         halt_with_error 500, 'db error'
@@ -701,14 +712,24 @@ module Isucari
         db.query('ROLLBACK')
         halt_with_error 403, '自分の商品は買えません'
       end
-
+      
       begin
         seller = db.xquery('SELECT * FROM `users` WHERE `id` = ? FOR UPDATE', target_item['seller_id']).first
-
+        
         if seller.nil?
           db.query('ROLLBACK')
           halt_with_error 404, 'seller not found'
         end
+
+        # async request
+        scr_thread = Thread.new{
+          scr = begin
+            api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
+          rescue
+            nil
+          end
+        }
+        
       rescue
         db.query('ROLLBACK')
         halt_with_error 500, 'db error'
@@ -743,13 +764,51 @@ module Isucari
         halt_with_error 500, 'failed to request to shipment service'
       end
 
+      #begin
+      #  pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+      #rescue
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'payment service is failed'
+      #end
+
+      # wait api
+      #pstr_thread.join
+      #if pstr.nil? 
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'payment service is failed'
+      #end
+      #if pstr['status'] == 'invalid'
+      #  db.query('ROLLBACK')
+      #  halt_with_error 400, 'カード情報に誤りがあります'
+      #end
+      #if pstr['status'] == 'fail'
+      #  db.query('ROLLBACK')
+      #  halt_with_error 400, 'カードの残高が足りません'
+      #end
+      #if pstr['status'] != 'ok'
+      #  db.query('ROLLBACK')
+      #  halt_with_error 400, '想定外のエラー'
+      #end
+
+      # wait api
+      scr_thread.join
+      if scr.nil? 
+        db.query('ROLLBACK')
+        halt_with_error 500, 'failed to request to shipment service'
+      end
       begin
-        pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
       rescue
+        db.query('ROLLBACK')
+        halt_with_error 500, 'db error'
+      end
+      
+      # wait api
+      pstr_thread.join
+      if pstr.nil? 
         db.query('ROLLBACK')
         halt_with_error 500, 'payment service is failed'
       end
-
       if pstr['status'] == 'invalid'
         db.query('ROLLBACK')
         halt_with_error 400, 'カード情報に誤りがあります'
@@ -759,17 +818,9 @@ module Isucari
         db.query('ROLLBACK')
         halt_with_error 400, 'カードの残高が足りません'
       end
-
       if pstr['status'] != 'ok'
         db.query('ROLLBACK')
         halt_with_error 400, '想定外のエラー'
-      end
-
-      begin
-        db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
-      rescue
-        db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
       end
 
       db.query('COMMIT')
