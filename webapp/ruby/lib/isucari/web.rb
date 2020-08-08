@@ -386,11 +386,13 @@ module Isucari
         end
         threads[i] = Thread.new{
           unless item['tid'].nil?
-            ssr[i] = begin
+            begin
               #api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
-              api_client.shipment_status(url, 'reserve_id' => item['sprid'])
+              tmp = api_client.shipment_status(url, 'reserve_id' => item['sprid'])
+        	    item_details[i]['shipping_status'] = tmp['status']
             rescue
             end
+
           end
         }
       end
@@ -486,11 +488,11 @@ module Isucari
       threads.each do |thr| 
           thr.join 
       end
-      items.each_with_index do |item,i|
-	      unless ssr[i].nil?
-        	item_details[i]['shipping_status'] = ssr[i]['status']
-	      end
-      end
+      #items.each_with_index do |item,i|
+	     # unless ssr[i].nil?
+      #  	item_details[i]['shipping_status'] = ssr[i]['status']
+	     # end
+      #end
 
       has_next = false
       if item_details.length > TRANSACTIONS_PER_PAGE
