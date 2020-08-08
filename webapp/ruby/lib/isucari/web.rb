@@ -333,10 +333,12 @@ module Isucari
           db.xquery("SELECT i.*,  
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
-                             t.`id` tid, t.`status` ts
+                             t.`id` tid, t.`status` ts,
+                             sp.`reserve_id` sprid
                      FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
+                                   LEFT JOIN `shippings` sp ON t.`id` = sp.`transaction_evidence_id`
                      WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) AND (i.`created_at` < ?  OR (i.`created_at` <= ? AND i.`id` < ?)) 
                      ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", 
                      user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
@@ -351,10 +353,12 @@ module Isucari
           db.xquery("SELECT i.*,  
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
-                             t.`id` tid, t.`status` ts
+                             t.`id` tid, t.`status` ts,
+                             sp.`reserve_id` sprid
                     FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
+                                   LEFT JOIN `shippings` sp ON t.`id` = sp.`transaction_evidence_id`
                     WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) 
                     ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", 
                     user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
@@ -366,20 +370,22 @@ module Isucari
 
       # create requests
       threads = []
-      shippings = []
+      #shippings = []
       ssr = []
       url = get_shipment_service_url
       items.each_with_index do |item,i|
         unless item['tid'].nil?
-          shippings[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
-          if shippings[i].nil?
+          #shippings[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
+          #if shippings[i].nil?
+          if item['sprid'].nil?
             halt_with_error 404, 'shipping not found'
           end
-	      end
-	      threads[i] = Thread.new{
+        end
+        threads[i] = Thread.new{
           unless item['tid'].nil?
             ssr[i] = begin
-              api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
+              #api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
+              api_client.shipment_status(url, 'reserve_id' => item['sprid'])
             rescue
             end
           end
