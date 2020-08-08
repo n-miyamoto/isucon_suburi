@@ -354,7 +354,7 @@ module Isucari
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
                              t.`id` tid, t.`status` ts,
-                             sp.`reserve_id` sprid
+                             sp.`reserve_id` sprid, sp.`status` spsts
                     FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
