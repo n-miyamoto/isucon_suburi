@@ -190,7 +190,7 @@ module Isucari
 
       response = {
         # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
-        'campaign' => 0,
+        'campaign' => 1,
         # 実装言語を返す
         'language' => 'ruby',
       }
@@ -688,8 +688,8 @@ module Isucari
       pstr = nil
       scr = nil
       begin
-        #target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
-        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', item_id).first
+        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
+        #target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? LIMIT 1 LOCK IN SHARE MODE', item_id).first
 
         if target_item.nil?
           db.query('ROLLBACK')
@@ -698,7 +698,7 @@ module Isucari
 
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 501, 'db error'
       end
 
       if target_item['status'] != ITEM_STATUS_ON_SALE
@@ -731,29 +731,29 @@ module Isucari
         
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 502, 'db error'
       end
 
       # async request
-      #pstr_thread = Thread.new{
-        #pstr = begin
-        #  #api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
-        #rescue
-        #  nil
-        #end
-      #}
+      pstr_thread = Thread.new{
+        pstr = begin
+          api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        rescue
+          nil
+        end
+      }
 
       category = get_category_by_id(target_item['category_id'])
       if category.nil?
         db.query('ROLLBACK')
-        halt_with_error 500, 'category id error'
+        halt_with_error 503, 'category id error'
       end
 
       begin
         db.xquery('INSERT INTO `transaction_evidences` (`seller_id`, `buyer_id`, `status`, `item_id`, `item_name`, `item_price`, `item_description`,`item_category_id`,`item_root_category_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', target_item['seller_id'], buyer['id'], TRANSACTION_EVIDENCE_STATUS_WAIT_SHIPPING, target_item['id'], target_item['name'], target_item['price'], target_item['description'], category['id'], category['parent_id'])
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 504, 'db error'
       end
 
       transaction_evidence_id = db.last_id
@@ -762,29 +762,31 @@ module Isucari
         db.xquery('UPDATE `items` SET `buyer_id` = ?, `status` = ?, `updated_at` = ? WHERE `id` = ?', buyer['id'], ITEM_STATUS_TRADING, Time.now, target_item['id'])
       rescue
         db.query('ROLLBACK')
-        halt_with_error 500, 'db error'
+        halt_with_error 505, 'db error'
       end
 
       #begin
-      #  scr = api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
+        #scr = api_client.shipment_create(get_shipment_service_url, to_address: buyer['address'], to_name: buyer['account_name'], from_address: seller['address'], from_name: seller['account_name'])
       #rescue
+      scr_thread.join
+      if scr.nil?
+        db.query('ROLLBACK')
+        halt_with_error 506, 'failed to request to shipment service'
+      end
+
+      #begin
+        #pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+      #rescue
+      #  db.query('ROLLBACK')
+      #  halt_with_error 507, 'payment service is failed'
+      #end
+
+      # wait api
+      #scr_thread.join
+      #if scr.nil? 
       #  db.query('ROLLBACK')
       #  halt_with_error 500, 'failed to request to shipment service'
       #end
-
-      begin
-        pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
-      rescue
-        db.query('ROLLBACK')
-        halt_with_error 500, 'payment service is failed'
-      end
-
-      # wait api
-      scr_thread.join
-      if scr.nil? 
-        db.query('ROLLBACK')
-        halt_with_error 500, 'failed to request to shipment service'
-      end
       begin
         db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
       rescue
@@ -793,7 +795,7 @@ module Isucari
       end
       
       # wait api
-      #pstr_thread.join
+      pstr_thread.join
       if pstr.nil? 
         db.query('ROLLBACK')
         halt_with_error 500, 'payment service is failed'
@@ -811,6 +813,14 @@ module Isucari
         db.query('ROLLBACK')
         halt_with_error 400, '想定外のエラー'
       end
+
+      #begin
+      #  db.xquery('INSERT INTO `shippings` (`transaction_evidence_id`, `status`, `item_name`, `item_id`, `reserve_id`, `reserve_time`, `to_address`, `to_name`, `from_address`, `from_name`, `img_binary`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', transaction_evidence_id, SHIPPINGS_STATUS_INITIAL, target_item['name'], target_item['id'], scr['reserve_id'], scr['reserve_time'], buyer['address'], buyer['account_name'], seller['address'], seller['account_name'], '')
+      #rescue
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'db error'
+      #end
+      
 
       db.query('COMMIT')
 
