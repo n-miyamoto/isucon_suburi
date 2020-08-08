@@ -334,7 +334,7 @@ module Isucari
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
                              t.`id` tid, t.`status` ts,
-                             sp.`reserve_id` sprid
+                             sp.`reserve_id` sprid, sp.`status` spsts
                      FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
@@ -472,6 +472,7 @@ module Isucari
           #item_detail['transaction_evidence_status'] = transaction_evidence['status']
           item_detail['transaction_evidence_status'] = item['ts']
           #item_detail['shipping_status'] = sstr['status']
+          item_detail['shipping_status'] = item['spsts']
         end
 
         item_detail
@@ -485,7 +486,7 @@ module Isucari
       end
       items.each_with_index do |item,i|
 	      unless ssr[i].nil?
-        	item_details[i]['shipping_status'] = ssr[i]['status']
+        	#item_details[i]['shipping_status'] = ssr[i]['status']
 	      end
       end
 
@@ -528,7 +529,7 @@ module Isucari
         halt_with_error 404, 'seller not found' if seller.nil?
 
         category = get_category_by_id(item['category_id'])
-        halt_with_error 404, 'category not found' if category.nil?
+        #halt_with_error 404, 'category not found' if category.nil?
 
         {
           'id' => item['id'],
