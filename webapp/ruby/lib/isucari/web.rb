@@ -333,10 +333,12 @@ module Isucari
           db.xquery("SELECT i.*,  
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
-                             t.`id` tid, t.`status` ts
+                             t.`id` tid, t.`status` ts,
+                             sp.`reserve_id` sprid
                      FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
+                                   LEFT JOIN `shippings` sp ON t.`id` = sp.`transaction_evidence_id`
                      WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) AND (i.`created_at` < ?  OR (i.`created_at` <= ? AND i.`id` < ?)) 
                      ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", 
                      user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP, Time.at(created_at), Time.at(created_at), item_id)
@@ -351,10 +353,12 @@ module Isucari
           db.xquery("SELECT i.*,  
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
-                             t.`id` tid, t.`status` ts
+                             t.`id` tid, t.`status` ts,
+                             sp.`reserve_id` sprid
                     FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
+                                   LEFT JOIN `shippings` sp ON t.`id` = sp.`transaction_evidence_id`
                     WHERE (i.`seller_id` = ? OR i.`buyer_id` = ?) AND i.`status` IN (?, ?, ?, ?, ?) 
                     ORDER BY i.`created_at` DESC, i.`id` DESC LIMIT #{TRANSACTIONS_PER_PAGE + 1}", 
                     user['id'], user['id'], ITEM_STATUS_ON_SALE, ITEM_STATUS_TRADING, ITEM_STATUS_SOLD_OUT, ITEM_STATUS_CANCEL, ITEM_STATUS_STOP)
