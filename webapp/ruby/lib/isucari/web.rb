@@ -690,13 +690,13 @@ module Isucari
         end
 
         # async request
-        pstr_thread = Thread.new{
-          pstr = begin
-            api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
-          rescue
-            nil
-          end
-        }
+        #pstr_thread = Thread.new{
+        #  pstr = begin
+        #    api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+        #  rescue
+        #    nil
+        #  end
+        #}
 
       rescue
         db.query('ROLLBACK')
@@ -764,19 +764,19 @@ module Isucari
       #  halt_with_error 500, 'failed to request to shipment service'
       #end
 
-      #begin
-      #  pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
-      #rescue
-      #  db.query('ROLLBACK')
-      #  halt_with_error 500, 'payment service is failed'
-      #end
-
-      # wait api
-      pstr_thread.join
-      if pstr.nil? 
+      begin
+        pstr = api_client.payment_token(get_payment_service_url, shop_id: PAYMENT_SERVICE_ISUCARI_SHOPID, token: token, api_key: PAYMENT_SERVICE_ISUCARI_APIKEY, price: target_item['price'])
+      rescue
         db.query('ROLLBACK')
         halt_with_error 500, 'payment service is failed'
       end
+
+      # wait api
+      #pstr_thread.join
+      #if pstr.nil? 
+      #  db.query('ROLLBACK')
+      #  halt_with_error 500, 'payment service is failed'
+      #end
       if pstr['status'] == 'invalid'
         db.query('ROLLBACK')
         halt_with_error 400, 'カード情報に誤りがあります'
