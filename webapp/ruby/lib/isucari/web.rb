@@ -370,20 +370,22 @@ module Isucari
 
       # create requests
       threads = []
-      shippings = []
+      #shippings = []
       ssr = []
       url = get_shipment_service_url
       items.each_with_index do |item,i|
         unless item['tid'].nil?
-          shippings[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
-          if shippings[i].nil?
+          #shippings[i] = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
+          #if shippings[i].nil?
+          if item[sprid]
             halt_with_error 404, 'shipping not found'
           end
 	      end
 	      threads[i] = Thread.new{
           unless item['tid'].nil?
             ssr[i] = begin
-              api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
+              #api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
+              api_client.shipment_status(url, 'reserve_id' => item[`sprid`])
             rescue
             end
           end
