@@ -682,7 +682,7 @@ module Isucari
       pstr = nil
       scr = nil
       begin
-        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE LIMIT 1', item_id).first
+        target_item = db.xquery('SELECT * FROM `items` WHERE `id` = ? FOR UPDATE', item_id).first
 
         if target_item.nil?
           db.query('ROLLBACK')
