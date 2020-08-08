@@ -337,7 +337,7 @@ module Isucari
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
                              t.`id` tid, t.`status` ts,
-                             sp.`reserve_id` sprid
+                             sp.`reserve_id` sprid, sp.`status` spsts
                      FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
@@ -357,7 +357,7 @@ module Isucari
                              s.`id` sid, s.`account_name` san, s.`num_sell_items` ssi,
                              b.`id` bid, b.`account_name` ban, b.`num_sell_items` bsi,
                              t.`id` tid, t.`status` ts,
-                             sp.`reserve_id` sprid
+                             sp.`reserve_id` sprid, sp.`status` spsts
                     FROM `items` i LEFT JOIN `users` s ON i.`seller_id` = s.`id` 
                                    LEFT JOIN `users` b ON i.`buyer_id` = b.`id`
                                    LEFT JOIN `transaction_evidences` t ON i.`id` = t.`item_id`
@@ -384,15 +384,6 @@ module Isucari
             halt_with_error 404, 'shipping not found'
           end
         end
-        threads[i] = Thread.new{
-          unless item['tid'].nil?
-            ssr[i] = begin
-              #api_client.shipment_status(url, 'reserve_id' => shippings[i]['reserve_id'])
-              api_client.shipment_status(url, 'reserve_id' => item['sprid'])
-            rescue
-            end
-          end
-        }
       end
 
       item_details = items.map do |item|
@@ -457,7 +448,6 @@ module Isucari
         #unless transaction_evidence.nil?
         unless item['tid'].nil?
           #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', transaction_evidence['id']).first
-          #shipping = db.xquery('SELECT * FROM `shippings` WHERE `transaction_evidence_id` = ?', item['tid']).first
           #if shipping.nil?
             #db.query('ROLLBACK')
             #halt_with_error 404, 'shipping not found'
@@ -475,22 +465,13 @@ module Isucari
           #item_detail['transaction_evidence_status'] = transaction_evidence['status']
           item_detail['transaction_evidence_status'] = item['ts']
           #item_detail['shipping_status'] = sstr['status']
+          item_detail['shipping_status'] = item['spsts']
         end
 
         item_detail
       end
 
       #db.query('COMMIT')
-
-      # join threads
-      threads.each do |thr| 
-          thr.join 
-      end
-      items.each_with_index do |item,i|
-	      unless ssr[i].nil?
-        	item_details[i]['shipping_status'] = ssr[i]['status']
-	      end
-      end
 
       has_next = false
       if item_details.length > TRANSACTIONS_PER_PAGE
@@ -551,7 +532,7 @@ module Isucari
         halt_with_error 404, 'seller not found' if seller.nil?
 
         category = get_category_by_id(item['category_id'])
-        halt_with_error 404, 'category not found' if category.nil?
+        #halt_with_error 404, 'category not found' if category.nil?
 
         {
           'id' => item['id'],
